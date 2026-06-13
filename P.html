@@ -522,12 +522,13 @@
         "Sona", "Sreejith"
     ];
 
-    const defaultChecked = ["Sanju", "Christo", "Akshay", "Jain", "Chetan", "Hashim", "Shyam", "Kamala"];
+    const defaultChecked = ["Sanju", "Christo", "Akshay", "Jain"]; 
     const TOTAL_SESSION_MINUTES = 90; 
-    const STORAGE_KEY = "arena_lineup_data_v2";
+    const STORAGE_KEY = "arena_lineup_data_v4";
 
     let sessionScores = {}; 
-    window.generatedMatchesData = [];
+    window.generatedMatchesData = []; 
+    let establishedOrder = []; 
 
     const playerGrid = document.getElementById('playerGrid');
     const countBadge = document.getElementById('countBadge');
@@ -539,7 +540,6 @@
     const targetRoundsCount = document.getElementById('targetRoundsCount');
     const sessionDateInput = document.getElementById('sessionDate');
 
-    /* STANDARD FISHER-YATES SHUFFLING METHOD TO AVOID FIXED REPETITIONS */
     function shuffleArray(array) {
         let currentIndex = array.length, randomIndex;
         while (currentIndex != 0) {
@@ -556,7 +556,9 @@
             date: sessionDateInput.value,
             duration: matchDurationSelect.value,
             activePlayers: activePlayers,
-            scores: sessionScores
+            establishedOrder: establishedOrder,
+            scores: sessionScores,
+            historicalMatches: window.generatedMatchesData
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
@@ -597,6 +599,14 @@
             sessionScores = savedData.scores;
         }
 
+        if (savedData && savedData.establishedOrder) {
+            establishedOrder = savedData.establishedOrder;
+        }
+
+        if (savedData && savedData.historicalMatches) {
+            window.generatedMatchesData = savedData.historicalMatches;
+        }
+
         const activeList = (savedData && savedData.activePlayers) ? savedData.activePlayers : defaultChecked;
 
         playerGrid.innerHTML = '';
@@ -626,8 +636,8 @@
 
     function updateInterface(triggerSave = true) {
         const checkedBoxes = document.querySelectorAll('#playerGrid input:checked');
-        let activePlayers = Array.from(checkedBoxes).map(cb => cb.value);
-        const count = activePlayers.length;
+        const currentSelectedPlayers = Array.from(checkedBoxes).map(cb => cb.value);
+        const count = currentSelectedPlayers.length;
         
         const gameMinutes = parseInt(matchDurationSelect.value);
         const maxRoundsPossible = Math.floor(TOTAL_SESSION_MINUTES / gameMinutes);
@@ -643,10 +653,18 @@
         if (count >= 4 && count <= 10) {
             planTitle.innerText = `Fixtures Board (${count} Players)`;
             
-            /* SHUFFLE SQUAD BEFORE FEEDING INTO DYNAMIC GENERATOR */
-            activePlayers = shuffleArray(activePlayers);
+            if (establishedOrder.length === 0) {
+                establishedOrder = shuffleArray([...currentSelectedPlayers]);
+            } else {
+                establishedOrder = establishedOrder.filter(name => currentSelectedPlayers.includes(name));
+                currentSelectedPlayers.forEach(name => {
+                    if (!establishedOrder.includes(name)) {
+                        establishedOrder.push(name);
+                    }
+                });
+            }
             
-            generateDynamicSchedule(activePlayers, count, maxRoundsPossible);
+            generateDynamicSchedule(establishedOrder, count, maxRoundsPossible);
         } else {
             planTitle.innerText = "Match Schedule";
             statsCard.style.display = 'none';
@@ -654,7 +672,7 @@
         }
 
         if (triggerSave) {
-            saveToLocalStorage(activePlayers);
+            saveToLocalStorage(currentSelectedPlayers);
         }
     }
 
@@ -664,8 +682,6 @@
         }
         if (team === 'A') sessionScores[matchIndex].scoreA = value;
         else sessionScores[matchIndex].scoreB = value;
-        
-        evaluateLiveWinnerMarkup(matchIndex);
 
         const checkedBoxes = document.querySelectorAll('#playerGrid input:checked');
         const activePlayers = Array.from(checkedBoxes).map(cb => cb.value);
@@ -714,22 +730,35 @@
                 else if (nB > nA) { classB = 'winner-highlight'; classA = 'loser-fade'; }
             }
 
+            const isLocked = (savedA !== '' || savedB !== '');
+            const roundLabel = isLocked ? `🔒 ${r.name} (Locked)` : r.name;
+
+            // NAVIGATION FIX: 
+            // 1. oninput: Saves text to memory instantly so 2 digits work perfectly.
+            // 2. onblur: Evaluates highlight layouts locally without destroying the focus targets.
+            // 3. onchange: Delays full layout re-renders until focus transitions cleanly.
             html += `
                 <div class="match-card" id="match-card-${idx}">
                     <div class="match-card-header">
-                        <span class="round-tag">${r.name}</span>
-                        <span class="status-live-dot">Live Schedule</span>
+                        <span class="round-tag">${roundLabel}</span>
+                        <span class="status-live-dot" style="${isLocked ? 'color: #10b981;':'color: #ef4444;'}">${isLocked ? 'Completed' : 'Live Schedule'}</span>
                     </div>
                     <div class="versus-container">
                         <div class="team-box side-a ${classA}">
                             <div class="player-name">${r.teamA1}</div>
                             <div class="player-name">${r.teamA2}</div>
                         </div>
-                        <input type="number" class="score-input" placeholder="-" min="0" value="${savedA}" oninput="saveScore(${idx}, 'A', this.value)">
+                        <input type="number" class="score-input" placeholder="-" min="0" value="${savedA}" 
+                               oninput="saveScore(${idx}, 'A', this.value)" 
+                               onblur="evaluateLiveWinnerMarkup(${idx})"
+                               onchange="updateInterface(false)">
                         <div class="versus-divider">
                             <span class="vs-badge">VS</span>
                         </div>
-                        <input type="number" class="score-input" placeholder="-" min="0" value="${savedB}" oninput="saveScore(${idx}, 'B', this.value)">
+                        <input type="number" class="score-input" placeholder="-" min="0" value="${savedB}" 
+                               oninput="saveScore(${idx}, 'B', this.value)" 
+                               onblur="evaluateLiveWinnerMarkup(${idx})"
+                               onchange="updateInterface(false)">
                         <div class="team-box side-b ${classB}">
                             <div class="player-name">${r.teamB1}</div>
                             <div class="player-name">${r.teamB2}</div>
@@ -800,33 +829,45 @@
             }
         }
 
-        let finalRounds = [];
-        window.generatedMatchesData = [];
+        let tempMatches = [];
         let summary = {};
-        p.forEach(name => summary[name] = 0);
+        playersList.forEach(name => summary[name] = 0);
 
         for (let i = 0; i < targetRounds; i++) {
-            let baseMatch = baseRounds[i % baseRounds.length];
+            const hasExistingScore = sessionScores[i] && (sessionScores[i].scoreA !== '' || sessionScores[i].scoreB !== '');
+            let matchObj;
             
-            let matchObj = {
-                name: `Fixture 0${i + 1}`,
-                teamA1: baseMatch.tA1,
-                teamA2: baseMatch.tA2,
-                teamB1: baseMatch.tB1,
-                teamB2: baseMatch.tB2,
-                bench: baseMatch.bench
-            };
+            if (hasExistingScore && window.generatedMatchesData[i]) {
+                matchObj = { ...window.generatedMatchesData[i] };
+            } else {
+                let baseMatch = baseRounds[i % baseRounds.length];
+                matchObj = {
+                    name: `Fixture 0${i + 1}`,
+                    teamA1: baseMatch.tA1,
+                    teamA2: baseMatch.tA2,
+                    teamB1: baseMatch.tB1,
+                    teamB2: baseMatch.tB2,
+                    bench: baseMatch.bench
+                };
+            }
             
-            finalRounds.push(matchObj);
-            window.generatedMatchesData.push(matchObj);
+            tempMatches.push(matchObj);
 
-            summary[baseMatch.tA1]++;
-            summary[baseMatch.tA2]++;
-            summary[baseMatch.tB1]++;
-            summary[baseMatch.tB2]++;
+            if (summary[matchObj.teamA1] !== undefined) summary[matchObj.teamA1]++;
+            if (summary[matchObj.teamA2] !== undefined) summary[matchObj.teamA2]++;
+            if (summary[matchObj.teamB1] !== undefined) summary[matchObj.teamB1]++;
+            if (summary[matchObj.teamB2] !== undefined) summary[matchObj.teamB2]++;
         }
 
-        renderOutput(finalRounds, summary);
+        window.generatedMatchesData = tempMatches;
+        
+        for (const key in summary) {
+            if (!p.includes(key)) {
+                delete summary[key];
+            }
+        }
+
+        renderOutput(window.generatedMatchesData, summary);
     }
 
     function exportToImage() {
