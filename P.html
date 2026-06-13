@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arena Lineup Tracker Pro</title>
+    <style>
+        :root {
+            --bg-main: #060814; 
+            --card-bg: rgba(16, 20, 38, 0.75);
+            --panel-inner: #1e293b;
+            --primary-neon: #10b981; 
+            --accent-gold: #fbbf24;
+            --team-a-color: #6366f1;
+            --team-b-color: #a855f7;
+            --text-light: #f8fafc;
+            --text-muted: #4b5563;
+            --border-color: rgba(51, 65, 85, 0.6);
+            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-stack);
+            background-color: var(--bg-main);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 45%),
+                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.12) 0px, transparent 45%);
+            background-attachment: fixed;
+            color: var(--text-light);
+            padding: 32px 16px 60px 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        header h1 {
+            font-size: 26px;
+            color: var(--text-light);
+            font-weight: 800;
+            letter-spacing: -0.75px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        header h1 span {
+            background: linear-gradient(135deg, #10b981, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
+        }
+
+        .card-header-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .card-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: #cbd5e1;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .time-settings {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .time-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .time-input-group label {
+            font-size: 11px;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        .time-input-group select, .time-input-group input[type="date"] {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: rgba(6, 8, 20, 0.6);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-light);
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .time-input-group select:focus, .time-input-group input[type="date"]:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+        }
+
+        .time-summary-badge {
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(30, 41, 59, 0.6);
+            padding: 12px;
+            border-radius: 10px;
+            color: #94a3b8;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .time-summary-badge span {
+            color: #10b981;
+            font-weight: 700;
+        }
+
+        .player-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .player-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: rgba(6, 8, 20, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            color: #94a3b8;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+
+        .player-btn input { display: none; }
+
+        .player-btn::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid #475569;
+            transition: all 0.2s ease;
+        }
+
+        .player-btn.checked {
+            background-color: rgba(99, 102, 241, 0.08);
+            border-color: rgba(99, 102, 241, 0.5);
+            color: var(--text-light);
+        }
+        
+        .player-btn.checked::after {
+            background: #6366f1;
+            border-color: #6366f1;
+            box-shadow: 0 0 8px #6366f1;
+        }
+
+        .counter-badge {
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--primary-neon);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            text-transform: uppercase;
+        }
+
+        .stats-scroller {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+        }
+
+        .stats-scroller::-webkit-scrollbar { display: none; }
+
+        .stat-chip {
+            background: rgba(6, 8, 20, 0.4);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            white-space: nowrap;
+            display: flex;
+            gap: 8px;
+        }
+
+        .stat-chip strong { color: #cbd5e1; font-weight: 500; }
+        .stat-chip span { color: #10b981; font-weight: 700; }
+
+        .match-card {
+            background: rgba(6, 8, 20, 0.35);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .match-card-header {
+            background: rgba(30, 41, 59, 0.35);
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .round-tag {
+            font-size: 11px;
+            font-weight: 800;
+            color: #94a3b8;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .status-live-dot {
+            font-size: 10px;
+            font-weight: 700;
+            color: #ef4444;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .status-live-dot::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #ef4444;
+            border-radius: 50%;
+        }
+
+        .versus-container {
+            display: grid;
+            grid-template-columns: 1fr 42px auto 42px 1fr;
+            column-gap: 12px; 
+            align-items: center;
+            padding: 20px 14px;
+            background: rgba(6, 8, 20, 0.2);
+        }
+
+        .team-box {
+            padding: 14px 12px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-height: 64px;
+            justify-content: center;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .team-box.side-a {
+            background: rgba(99, 102, 241, 0.06);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+        }
+
+        .team-box.side-b {
+            background: rgba(168, 85, 247, 0.06);
+            border: 1px solid rgba(168, 85, 247, 0.25);
+        }
+
+        .player-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #e2e8f0;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            transition: color 0.3s ease;
+        }
+
+        .team-box.winner-highlight {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(6, 8, 20, 0.4) 100%) !important;
+            border-color: var(--accent-gold) !important;
+            transform: scale(1.03);
+            box-shadow: 0 10px 25px -8px rgba(251, 191, 36, 0.3);
+            z-index: 2;
+        }
+
+        .team-box.winner-highlight::after {
+            content: 'WINNER';
+            position: absolute;
+            bottom: -7px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent-gold);
+            color: #451a03;
+            font-size: 8px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(251, 191, 36, 0.4);
+        }
+
+        .team-box.winner-highlight .player-name {
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .team-box.loser-fade {
+            opacity: 0.12;
+            filter: grayscale(100%) blur(0.3px);
+            border-color: transparent !important;
+            background: transparent !important;
+            transform: scale(0.97);
+        }
+
+        .score-input {
+            width: 100%;
+            height: 38px;
+            background: rgba(6, 8, 20, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-light);
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .score-input:focus {
+            border-color: #94a3b8;
+            background: #060814;
+        }
+
+        .score-input::-webkit-outer-spin-button,
+        .score-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .versus-divider {
+            padding: 0 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .vs-badge {
+            color: #ef4444;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+        }
+
+        .match-card-footer {
+            background: rgba(6, 8, 20, 0.2);
+            padding: 10px 16px;
+            font-size: 11px;
+            color: #64748b;
+            border-top: 1px solid rgba(255, 255, 255, 0.02);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .match-card-footer strong {
+            color: #f59e0b;
+            font-weight: 700;
+        }
+
+        .export-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border: none;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+        }
+
+        .export-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+        }
+
+        .alert-box {
+            text-align: center;
+            padding: 24px;
+            color: #64748b;
+            background: rgba(6, 8, 20, 0.2);
+            border: 1px dashed var(--border-color);
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>Arena <span>Lineups</span></h1>
+        <p>Pro Rotation Dashboard</p>
+    </header>
+
+    <div class="card">
+        <div class="card-header-main"><div class="card-title">Session Settings</div></div>
+        <div class="time-settings">
+            <div class="settings-row">
+                <div class="time-input-group">
+                    <label for="sessionDate">Date</label>
+                    <input type="date" id="sessionDate" onchange="updateInterface()">
+                </div>
+                <div class="time-input-group">
+                    <label for="matchDuration">Pace</label>
+                    <select id="matchDuration" onchange="updateInterface()">
+                        <option value="15">15 Min</option>
+                        <option value="12" selected>12 Min</option>
+                        <option value="10">10 Min</option>
+                        <option value="9">9 Min</option>
+                    </select>
+                </div>
+            </div>
+            <div class="time-summary-badge" id="timeSummary">
+                Session: 90m Plan | Target: <span id="targetRoundsCount">7</span> Fixtures
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header-main">
+            <div class="card-title">Squad Availability</div>
+            <span class="counter-badge" id="countBadge">0 Active</span>
+        </div>
+        <div class="player-grid" id="playerGrid"></div>
+    </div>
+
+    <div class="card" id="statsCard" style="display:none;">
+        <div class="card-header-main"><div class="card-title">Individual Game Tally</div></div>
+        <div class="stats-scroller" id="statsScroller"></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header-main"><div class="card-title" id="planTitle">Match Schedule</div></div>
+        <div id="scheduleContainer">
+            <div class="alert-box">Select between 4 to 10 active competitors to compute your bracket layout.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const playersList = [
+        "Sanju", "Christo", "Akshay", "Jain", 
+        "Chetan", "Hashim", "Shyam", "Kamala", 
+        "Sona", "Sreejith"
+    ];
+
+    const defaultChecked = ["Sanju", "Christo", "Akshay", "Jain", "Chetan", "Hashim", "Shyam", "Kamala"];
+    const TOTAL_SESSION_MINUTES = 90; 
+    const STORAGE_KEY = "arena_lineup_data_v2";
+
+    let sessionScores = {}; 
+    window.generatedMatchesData = [];
+
+    const playerGrid = document.getElementById('playerGrid');
+    const countBadge = document.getElementById('countBadge');
+    const planTitle = document.getElementById('planTitle');
+    const statsCard = document.getElementById('statsCard');
+    const statsScroller = document.getElementById('statsScroller');
+    const scheduleContainer = document.getElementById('scheduleContainer');
+    const matchDurationSelect = document.getElementById('matchDuration');
+    const targetRoundsCount = document.getElementById('targetRoundsCount');
+    const sessionDateInput = document.getElementById('sessionDate');
+
+    /* STANDARD FISHER-YATES SHUFFLING METHOD TO AVOID FIXED REPETITIONS */
+    function shuffleArray(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex != 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
+    function saveToLocalStorage(activePlayers) {
+        const state = {
+            timestamp: Date.now(), 
+            date: sessionDateInput.value,
+            duration: matchDurationSelect.value,
+            activePlayers: activePlayers,
+            scores: sessionScores
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function loadFromLocalStorage() {
+        const rawData = localStorage.getItem(STORAGE_KEY);
+        if (!rawData) return null;
+
+        try {
+            const data = JSON.parse(rawData);
+            const twelveHoursInMs = 12 * 60 * 60 * 1000;
+            if (Date.now() - data.timestamp > twelveHoursInMs) {
+                localStorage.removeItem(STORAGE_KEY);
+                return null; 
+            }
+            return data;
+        } catch (e) { return null; }
+    }
+
+    function init() {
+        const savedData = loadFromLocalStorage();
+
+        if (savedData && savedData.date) {
+            sessionDateInput.value = savedData.date;
+        } else {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            sessionDateInput.value = `${yyyy}-${mm}-${dd}`;
+        }
+
+        if (savedData && savedData.duration) {
+            matchDurationSelect.value = savedData.duration;
+        }
+
+        if (savedData && savedData.scores) {
+            sessionScores = savedData.scores;
+        }
+
+        const activeList = (savedData && savedData.activePlayers) ? savedData.activePlayers : defaultChecked;
+
+        playerGrid.innerHTML = '';
+        playersList.forEach(name => {
+            const checked = activeList.includes(name) ? 'checked' : '';
+            const activeClass = checked ? 'checked' : '';
+            
+            const div = document.createElement('div');
+            div.className = `player-btn ${activeClass}`;
+            div.innerHTML = `
+                <input type="checkbox" value="${name}" ${checked} onchange="updateInterface()">
+                <span>${name}</span>
+            `;
+            
+            div.addEventListener('click', function(e) {
+                if (e.target.tagName !== 'INPUT') {
+                    const cb = this.querySelector('input');
+                    cb.checked = !cb.checked;
+                    updateInterface();
+                }
+            });
+            playerGrid.appendChild(div);
+        });
+        
+        updateInterface(false); 
+    }
+
+    function updateInterface(triggerSave = true) {
+        const checkedBoxes = document.querySelectorAll('#playerGrid input:checked');
+        let activePlayers = Array.from(checkedBoxes).map(cb => cb.value);
+        const count = activePlayers.length;
+        
+        const gameMinutes = parseInt(matchDurationSelect.value);
+        const maxRoundsPossible = Math.floor(TOTAL_SESSION_MINUTES / gameMinutes);
+        targetRoundsCount.innerText = maxRoundsPossible;
+
+        document.querySelectorAll('.player-btn').forEach(btn => {
+            if(btn.querySelector('input').checked) btn.classList.add('checked');
+            else btn.classList.remove('checked');
+        });
+
+        countBadge.innerText = `${count} Active`;
+        
+        if (count >= 4 && count <= 10) {
+            planTitle.innerText = `Fixtures Board (${count} Players)`;
+            
+            /* SHUFFLE SQUAD BEFORE FEEDING INTO DYNAMIC GENERATOR */
+            activePlayers = shuffleArray(activePlayers);
+            
+            generateDynamicSchedule(activePlayers, count, maxRoundsPossible);
+        } else {
+            planTitle.innerText = "Match Schedule";
+            statsCard.style.display = 'none';
+            scheduleContainer.innerHTML = `<div class="alert-box">Select between 4 to 10 active competitors to compute your bracket layout.<br>(Current Selected: ${count})</div>`;
+        }
+
+        if (triggerSave) {
+            saveToLocalStorage(activePlayers);
+        }
+    }
+
+    function saveScore(matchIndex, team, value) {
+        if (!sessionScores[matchIndex]) {
+            sessionScores[matchIndex] = { scoreA: '', scoreB: '' };
+        }
+        if (team === 'A') sessionScores[matchIndex].scoreA = value;
+        else sessionScores[matchIndex].scoreB = value;
+        
+        evaluateLiveWinnerMarkup(matchIndex);
+
+        const checkedBoxes = document.querySelectorAll('#playerGrid input:checked');
+        const activePlayers = Array.from(checkedBoxes).map(cb => cb.value);
+        saveToLocalStorage(activePlayers);
+    }
+
+    function evaluateLiveWinnerMarkup(matchIndex) {
+        const card = document.getElementById(`match-card-${matchIndex}`);
+        if (!card) return;
+
+        const boxA = card.querySelector('.team-box.side-a');
+        const boxB = card.querySelector('.team-box.side-b');
+        
+        boxA.classList.remove('winner-highlight', 'loser-fade');
+        boxB.classList.remove('winner-highlight', 'loser-fade');
+
+        const record = sessionScores[matchIndex];
+        if (!record || record.scoreA === '' || record.scoreB === '') return;
+
+        const valA = parseInt(record.scoreA);
+        const valB = parseInt(record.scoreB);
+
+        if (isNaN(valA) || isNaN(valB)) return;
+
+        if (valA > valB) {
+            boxA.classList.add('winner-highlight');
+            boxB.classList.add('loser-fade');
+        } else if (valB > valA) {
+            boxB.classList.add('winner-highlight');
+            boxA.classList.add('loser-fade');
+        }
+    }
+
+    function renderOutput(rounds, summary) {
+        let html = '';
+        rounds.forEach((r, idx) => {
+            const savedA = sessionScores[idx]?.scoreA || '';
+            const savedB = sessionScores[idx]?.scoreB || '';
+
+            let classA = '';
+            let classB = '';
+            if (savedA !== '' && savedB !== '') {
+                const nA = parseInt(savedA);
+                const nB = parseInt(savedB);
+                if (nA > nB) { classA = 'winner-highlight'; classB = 'loser-fade'; }
+                else if (nB > nA) { classB = 'winner-highlight'; classA = 'loser-fade'; }
+            }
+
+            html += `
+                <div class="match-card" id="match-card-${idx}">
+                    <div class="match-card-header">
+                        <span class="round-tag">${r.name}</span>
+                        <span class="status-live-dot">Live Schedule</span>
+                    </div>
+                    <div class="versus-container">
+                        <div class="team-box side-a ${classA}">
+                            <div class="player-name">${r.teamA1}</div>
+                            <div class="player-name">${r.teamA2}</div>
+                        </div>
+                        <input type="number" class="score-input" placeholder="-" min="0" value="${savedA}" oninput="saveScore(${idx}, 'A', this.value)">
+                        <div class="versus-divider">
+                            <span class="vs-badge">VS</span>
+                        </div>
+                        <input type="number" class="score-input" placeholder="-" min="0" value="${savedB}" oninput="saveScore(${idx}, 'B', this.value)">
+                        <div class="team-box side-b ${classB}">
+                            <div class="player-name">${r.teamB1}</div>
+                            <div class="player-name">${r.teamB2}</div>
+                        </div>
+                    </div>
+                    <div class="match-card-footer">
+                        <strong>Bench Squad:</strong> ⏳ ${r.bench}
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `<button class="export-btn" onclick="exportToImage()">📥 Save </button>`;
+        scheduleContainer.innerHTML = html;
+
+        statsCard.style.display = 'block';
+        statsScroller.innerHTML = '';
+        for (const [pName, pCount] of Object.entries(summary)) {
+            const chip = document.createElement('div');
+            chip.className = 'stat-chip';
+            chip.innerHTML = `<strong>${pName}</strong> <span>${pCount} G</span>`;
+            statsScroller.appendChild(chip);
+        }
+    }
+
+    function generateDynamicSchedule(p, count, targetRounds) {
+        let baseRounds = [];
+        
+        if (count === 4) {
+            baseRounds = [
+                { tA1: p[0], tA2: p[1], tB1: p[2], tB2: p[3], bench: "None" },
+                { tA1: p[0], tA2: p[2], tB1: p[1], tB2: p[3], bench: "None" },
+                { tA1: p[0], tA2: p[3], tB1: p[1], tB2: p[2], bench: "None" }
+            ];
+        } 
+        else if (count === 5) {
+            for (let i = 0; i < 5; i++) {
+                let bench = p[i];
+                let c = p.filter(n => n !== bench);
+                baseRounds.push({ tA1: c[0], tA2: c[1], tB1: c[2], tB2: c[3], bench: bench });
+            }
+        } 
+        else if (count === 6 || count === 7) {
+            for (let i = 0; i < count; i++) {
+                let cIdx = [i % count, (i + 1) % count, (i + 2) % count, (i + 4) % count];
+                let c = cIdx.map(idx => p[idx]);
+                let bench = p.filter(n => !c.includes(n));
+                baseRounds.push({ tA1: c[0], tA2: c[1], tB1: c[2], tB2: c[3], bench: bench.join(', ') });
+            }
+        } 
+        else if (count === 8) {
+            let gA = [p[0], p[1], p[2], p[3]];
+            let gB = [p[4], p[5], p[6], p[7]];
+            baseRounds = [
+                { tA1: gA[0], tA2: gA[1], tB1: gA[2], tB2: gA[3], bench: gB.join(', ') },
+                { tA1: gB[0], tA2: gB[1], tB1: gB[2], tB2: gB[3], bench: gA.join(', ') },
+                { tA1: gA[0], tA2: gA[2], tB1: gA[1], tB2: gA[3], bench: gB.join(', ') },
+                { tA1: gB[0], tA2: gB[2], tB1: gB[1], tB2: gB[3], bench: gA.join(', ') },
+                { tA1: gA[0], tA2: gA[3], tB1: gA[1], tB2: gA[2], bench: gB.join(', ') },
+                { tA1: gB[0], tA2: gB[3], tB1: gB[1], tB2: gB[2], bench: gA.join(', ') }
+            ];
+        } 
+        else if (count === 9 || count === 10) {
+            for (let r = 0; r < count; r++) {
+                let c = [p[(r*4)%count], p[(r*4+1)%count], p[(r*4+2)%count], p[(r*4+3)%count]];
+                let bench = p.filter(n => !c.includes(n));
+                baseRounds.push({ tA1: c[0], tA2: c[1], tB1: c[2], tB2: c[3], bench: bench.join(', ') });
+            }
+        }
+
+        let finalRounds = [];
+        window.generatedMatchesData = [];
+        let summary = {};
+        p.forEach(name => summary[name] = 0);
+
+        for (let i = 0; i < targetRounds; i++) {
+            let baseMatch = baseRounds[i % baseRounds.length];
+            
+            let matchObj = {
+                name: `Fixture 0${i + 1}`,
+                teamA1: baseMatch.tA1,
+                teamA2: baseMatch.tA2,
+                teamB1: baseMatch.tB1,
+                teamB2: baseMatch.tB2,
+                bench: baseMatch.bench
+            };
+            
+            finalRounds.push(matchObj);
+            window.generatedMatchesData.push(matchObj);
+
+            summary[baseMatch.tA1]++;
+            summary[baseMatch.tA2]++;
+            summary[baseMatch.tB1]++;
+            summary[baseMatch.tB2]++;
+        }
+
+        renderOutput(finalRounds, summary);
+    }
+
+    function exportToImage() {
+        if (!window.generatedMatchesData || window.generatedMatchesData.length === 0) {
+            alert("No data available to print.");
+            return;
+        }
+
+        const chosenDate = sessionDateInput.value || 'Date TBD';
+        const matches = window.generatedMatchesData;
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        const width = 560;
+        const cardHeight = 120;
+        const headerHeight = 90;
+        const padding = 20;
+        const totalHeight = headerHeight + (matches.length * (cardHeight + 12)) + padding;
+        
+        canvas.width = width;
+        canvas.height = totalHeight;
+
+        ctx.fillStyle = '#060814';
+        ctx.fillRect(0, 0, width, totalHeight);
+
+        ctx.fillStyle = '#10b981';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.fillText('ARENA LINEUPS', padding, 40);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '600 11px sans-serif';
+        ctx.fillText(`OFFICIAL ROTATION GRAPHIC  |  ${chosenDate}`, padding, 60);
+
+        ctx.strokeStyle = 'rgba(51, 65, 85, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padding, 74);
+        ctx.lineTo(width - padding, 74);
+        ctx.stroke();
+
+        let currentY = headerHeight;
+
+        matches.forEach((match, idx) => {
+            const scoreRecord = sessionScores[idx] || { scoreA: '', scoreB: '' };
+            const sA = scoreRecord.scoreA !== '' ? scoreRecord.scoreA : '-';
+            const sB = scoreRecord.scoreB !== '' ? scoreRecord.scoreB : '-';
+
+            const numA = scoreRecord.scoreA !== '' ? parseInt(scoreRecord.scoreA) : NaN;
+            const numB = scoreRecord.scoreB !== '' ? parseInt(scoreRecord.scoreB) : NaN;
+            const hasWinner = !isNaN(numA) && !isNaN(numB) && numA !== numB;
+
+            ctx.fillStyle = '#101426';
+            ctx.beginPath();
+            ctx.roundRect(padding, currentY, width - (padding * 2), cardHeight, 10);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(51, 65, 85, 0.6)';
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(30, 41, 59, 0.4)';
+            ctx.beginPath();
+            ctx.roundRect(padding, currentY, width - (padding * 2), 26, [10, 10, 0, 0]);
+            ctx.fill();
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.fillText(match.name.toUpperCase(), padding + 12, currentY + 17);
+
+            if (hasWinner && numA < numB) ctx.globalAlpha = 0.15;
+            ctx.fillStyle = 'rgba(99, 102, 241, 0.08)';
+            ctx.beginPath();
+            ctx.roundRect(padding + 12, currentY + 36, 135, 48, 6);
+            ctx.fill();
+            
+            if (hasWinner && numA > numB) {
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#fbbf24';
+                ctx.font = '900 8px sans-serif';
+                ctx.fillText('★ WINNER', padding + 22, currentY + 46);
+            } else {
+                ctx.strokeStyle = 'rgba(99, 102, 241, 0.2)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
+
+            ctx.fillStyle = (hasWinner && numA > numB) ? '#ffffff' : '#cbd5e1';
+            ctx.font = '600 12px sans-serif';
+            ctx.fillText(match.teamA1, padding + 22, currentY + (hasWinner && numA > numB ? 58 : 54));
+            ctx.fillText(match.teamA2, padding + 22, currentY + (hasWinner && numA > numB ? 74 : 72));
+
+            ctx.fillStyle = '#060814';
+            ctx.beginPath();
+            ctx.roundRect(padding + 160, currentY + 42, 36, 36, 6);
+            ctx.roundRect(width - padding - 196, currentY + 42, 36, 36, 6);
+            ctx.fill();
+
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(sA, padding + 178, currentY + 64);
+            ctx.fillText(sB, width - padding - 178, currentY + 64);
+
+            ctx.fillStyle = '#ef4444';
+            ctx.font = '900 9px sans-serif';
+            ctx.fillText('VS', width / 2, currentY + 63);
+            ctx.textAlign = 'left';
+
+            if (hasWinner && numB < numA) ctx.globalAlpha = 0.15;
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.08)';
+            ctx.beginPath();
+            ctx.roundRect(width - padding - 147, currentY + 36, 135, 48, 6);
+            ctx.fill();
+
+            if (hasWinner && numB > numA) {
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#fbbf24';
+                ctx.font = '900 8px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('WINNER ★', width - padding - 22, currentY + 46);
+            } else {
+                ctx.strokeStyle = 'rgba(168, 85, 247, 0.2)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
+
+            ctx.fillStyle = (hasWinner && numB > numA) ? '#ffffff' : '#cbd5e1';
+            ctx.font = '600 12px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(match.teamB1, width - padding - 22, currentY + (hasWinner && numB > numA ? 58 : 54));
+            ctx.fillText(match.teamB2, width - padding - 22, currentY + (hasWinner && numB > numA ? 74 : 72));
+            ctx.textAlign = 'left';
+
+            ctx.fillStyle = '#64748b';
+            ctx.font = '500 10px sans-serif';
+            ctx.fillText(`Bench Squad: ${match.bench}`, padding + 12, currentY + 104);
+
+            currentY += cardHeight + 12;
+        });
+
+        const imageURI = canvas.toDataURL("image/png");
+        const downloadLink = document.createElement('a');
+        downloadLink.href = imageURI;
+        downloadLink.download = `Arena_Lineups_${chosenDate}.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>
