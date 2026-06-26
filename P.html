@@ -256,50 +256,75 @@
         }
         .match-card-footer strong { color: #f59e0b; font-weight: 700; }
 
-        /* ── Mobile Optimization for Player Cards ── */
+        /* ── Mobile View Overlap Fix ── */
 @media screen and (max-width: 480px) {
+    /* 1. Change layout to a 3-row vertical stack instead of a tight row */
     .versus-container {
-        grid-template-columns: 1fr 1fr; /* Rearrange into a clean 2x2 grid */
-        row-gap: 14px;
-        column-gap: 10px;
-        padding: 16px 12px;
+        grid-template-columns: 1fr; 
+        grid-template-rows: auto auto auto;
+        row-gap: 12px;
+        column-gap: 0;
+        padding: 16px 14px;
+        justify-items: center;
     }
 
-    /* Make Team A take the top-left quadrant */
-    .versus-container .team-box.side-a {
-        grid-column: 1;
-        grid-row: 1;
-    }
-
-    /* Make Team B take the top-right quadrant */
-    .versus-container .team-box.side-b {
-        grid-column: 2;
-        grid-row: 1;
-    }
-
-    /* Position Team A's score input beneath Team A */
-    .versus-container input[oninput*="'A'"] {
-        grid-column: 1;
-        grid-row: 2;
+    /* 2. Reset team box layout styles */
+    .versus-container .team-box {
         width: 100%;
-    }
-
-    /* Position Team B's score input beneath Team B */
-    .versus-container input[oninput*="'B'"] {
-        grid-column: 2;
-        grid-row: 2;
-        width: 100%;
-    }
-
-    /* Move the "VS" badge elegantly between the score inputs */
-    .versus-container .versus-divider {
-        grid-column: 1 / span 2;
-        grid-row: 2;
-        pointer-events: none; /* Let clicks pass through to input elements */
-        z-index: 5;
+        min-height: auto;
+        padding: 10px;
     }
     
-    /* Ensure long player names don't break layouts */
+    /* 3. Wrap Team + Input into a side-by-side flex layout on mobile rows */
+    .versus-container .team-box.side-a {
+        grid-row: 1;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .versus-container .team-box.side-b {
+        grid-row: 3;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* 4. Position the inputs elegantly inside their respective team row spaces */
+    .versus-container input[oninput*="'A'"] {
+        grid-row: 1;
+        width: 50px;
+        height: 34px;
+        margin-left: auto;
+        z-index: 5;
+    }
+    .versus-container input[oninput*="'B'"] {
+        grid-row: 3;
+        width: 50px;
+        height: 34px;
+        margin-left: auto;
+        z-index: 5;
+    }
+
+    /* 5. Isolate the VS Divider completely to the middle row so it never overlaps */
+    .versus-container .versus-divider {
+        grid-row: 2;
+        padding: 4px 0;
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+    
+    .versus-container .vs-badge {
+        font-size: 11px;
+        background: rgba(239, 68, 68, 0.15);
+        padding: 2px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    /* Small text adjustments for name overflow safety */
     .player-name {
         font-size: 12px;
     }
